@@ -10,3 +10,6 @@ license: Apache-2.0
 
 maintainers:
   - hbentel
+
+dependencies:
+  idf: ">=5.0.0"
