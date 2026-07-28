@@ -19,7 +19,6 @@
 #include "esp_ipc.h"
 #include "ll_cam.h"
 #include "cam_hal.h"
-#include "recovery_mgr.h" // Added for error reporting
 
 #if CONFIG_IDF_TARGET_ESP32S3
 #include "soc/gdma_struct.h"
@@ -193,8 +192,7 @@ static void cam_psram_jpeg_task(void)
             // Check free_mask: if 0, we are just waiting for the consumer (backpressure), not stalled.
             uint32_t free = __atomic_load_n(&cam_obj->free_mask, __ATOMIC_SEQ_CST);
             if (free != 0 && cam_obj->debug.vsync_isr_count > last_vsync + 10 && cam_obj->debug.eof_count == last_eof) {
-                ESP_LOGE(TAG, "Hard Stall detected (GDMA dead with %u buffers free). Triggering recovery...", (unsigned)__builtin_popcount(free));
-                recovery_mgr_report_error(RECOVERY_ERR_FRAME_TIMEOUT);
+                ESP_LOGE(TAG, "JPEG PSRAM task failed/recovered!");
             } else if (free != 0) {
                  ESP_LOGW(TAG, "PSRAM-JPEG-WAIT: vsync=%lu eof=%lu good=%lu (Backpressure or Sluggish)",
                     (unsigned long)cam_obj->debug.vsync_isr_count,
