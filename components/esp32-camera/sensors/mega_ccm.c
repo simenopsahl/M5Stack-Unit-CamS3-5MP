@@ -580,9 +580,15 @@ static int set_dummy(sensor_t *sensor, int val)
     // ESP_LOGW(TAG, "Unsupported"); 
     return 0; // Changed from -1 to fake a success
 }
-static int set_gainceiling_dummy(sensor_t *sensor, gainceiling_t val)
+static int set_gainceiling_wrapper(sensor_t *sensor, gainceiling_t val)
 {
-    return 0; // Changed from -1 to fake a success
+    // Cast the strict enum to an int and pass it to your AGC function!
+    int ret = set_agc_gain(sensor, (int)val);
+    
+    // Sync the status so ESPHome knows it worked
+    if (ret == 0) sensor->status.gainceiling = val;
+    
+    return ret;
 }
 
 int mega_ccm_detect(int slv_addr, sensor_id_t *id)
@@ -625,8 +631,8 @@ int mega_ccm_init(sensor_t *sensor)
     sensor->set_mamual_exp_h = set_mamual_exp_h;
     sensor->set_mamual_exp_l= set_mamual_exp_l;
     
-    // Map ESPHome's Gain Ceiling to the hardware's Manual AGC function
-    sensor->set_gainceiling = set_agc_gain; 
+    // Route ESPHome's Gain Ceiling through our new type-casting wrapper
+    sensor->set_gainceiling = set_gainceiling_wrapper;
 
     sensor->set_sharpness = set_dummy;
     sensor->set_denoise = set_dummy;
