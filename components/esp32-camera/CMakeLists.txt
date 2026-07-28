@@ -1,16 +1,9 @@
 # ESP32-S3 only, MEGA_CCM (PY260) only, JPEG only
 # Forked from M5Stack UnitCamS3-UserDemo (unitcams3-5mp branch)
 
-# Select SCCB implementation based on ESP-IDF major version:
-#   IDF 5.x  → driver/sccb.c            (legacy driver/i2c.h API, deprecated in 5.x)
-#   IDF 6.0+ → driver/sccb_i2c_master.c (new driver/i2c_master.h API, legacy removed in 7.0)
-if(IDF_VERSION_MAJOR GREATER_EQUAL 6)
-    set(SCCB_SRC "driver/sccb_i2c_master.c")
-    message(STATUS "esp32-camera: SCCB using new I2C master API (IDF ${IDF_VERSION_MAJOR}.x)")
-else()
-    set(SCCB_SRC "driver/sccb.c")
-    message(STATUS "esp32-camera: SCCB using legacy I2C API (IDF ${IDF_VERSION_MAJOR}.x)")
-endif()
+# Force the new I2C master API to prevent collision with ESPHome's driver_ng
+set(SCCB_SRC "driver/sccb_i2c_master.c")
+message(STATUS "esp32-camera: SCCB using new I2C master API (ESPHome Override)")
 
 set(COMPONENT_SRCS
     conversions/esp_jpg_decode.c
