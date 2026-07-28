@@ -1,3 +1,6 @@
+Forked to use the custom esp32-camera driver in ESPHome
+
+
 # ESP32-S3 Camera Firmware for M5Stack Unit CamS3-5MP
 
 Custom ESP-IDF firmware for the **M5Stack Unit CamS3-5MP** board. Streams MJPEG
