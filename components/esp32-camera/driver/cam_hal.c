@@ -539,12 +539,6 @@ typedef struct {
     esp_err_t  ret;
 } cam_isr_init_arg_t;
 
-static void cam_isr_init_ipc_wrapper(void *arg)
-{
-    cam_isr_init_arg_t *p = (cam_isr_init_arg_t *)arg;
-    p->ret = ll_cam_init_isr(p->cam);
-}
-
 esp_err_t cam_config(const camera_config_t *config, framesize_t frame_size, uint16_t sensor_pid)
 {
     CAM_CHECK(NULL != config, "config pointer is invalid", ESP_ERR_INVALID_ARG);
