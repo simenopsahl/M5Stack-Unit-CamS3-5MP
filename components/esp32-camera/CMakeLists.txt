@@ -42,6 +42,6 @@ else()
     set(GDMA_PERIPH_COMPONENT "")
 endif()
 
-set(COMPONENT_PRIV_REQUIRES freertos nvs_flash esp_timer esp_mm recovery_mgr esp_system ${GDMA_PERIPH_COMPONENT})
+set(COMPONENT_PRIV_REQUIRES freertos nvs_flash esp_timer esp_mm esp_system ${GDMA_PERIPH_COMPONENT})
 
 register_component()
