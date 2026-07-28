@@ -154,8 +154,11 @@ static int set_framesize(sensor_t *sensor, framesize_t framesize)
         ret = write_reg(sensor->slv_addr, RESOLUTION_REG, 0x01);
     }else if(framesize == FRAMESIZE_VGA){   //640x480
         ret = write_reg(sensor->slv_addr, RESOLUTION_REG, 0x02);
-    }else if(framesize == FRAMESIZE_HD){   //1280x720
+    }else if(framesize == FRAMESIZE_XGA){   // ESPHome asks for 1024x768
+        // Hijack the request and tell the hardware to output HD (1280x720)
         ret = write_reg(sensor->slv_addr, RESOLUTION_REG, 0x03);
+        // Overwrite the framesize so the JPEG headers map correctly
+        framesize = FRAMESIZE_HD;
     }else if(framesize == FRAMESIZE_UXGA){   //1600x1200
         ret = write_reg(sensor->slv_addr, RESOLUTION_REG, 0x04);
     }else if(framesize == FRAMESIZE_FHD){   //1920x1080
