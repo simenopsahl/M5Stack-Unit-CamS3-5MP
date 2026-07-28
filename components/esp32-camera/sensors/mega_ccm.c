@@ -316,39 +316,18 @@ static int set_saturation(sensor_t *sensor, int level)
 static int set_exposure_ctrl(sensor_t *sensor, int enable)
 {
     int ret = 0;
-    if (enable > exposure_max) {
-        ESP_LOGW(TAG, "Invalid exposure: %u", enable);
-        enable = exposure_max;
-    }
-    switch (enable) {
-    case exposure_0:
-        ret = write_reg(sensor->slv_addr, EXP_COMPENSATE_REG, 0x00); //default
-        break;
-    case exposure_1:
-        ret = write_reg(sensor->slv_addr, EXP_COMPENSATE_REG, 0x01); //+1
-        break;
-    case exposure_2:
-        ret = write_reg(sensor->slv_addr, EXP_COMPENSATE_REG, 0x02); //-1
-        break;
-    case exposure_3:
-        ret = write_reg(sensor->slv_addr, EXP_COMPENSATE_REG, 0x03); //+2
-        break;
-    case exposure_4:
-        ret = write_reg(sensor->slv_addr, EXP_COMPENSATE_REG, 0x04); //-2
-        break;
-    case exposure_5:
-        ret = write_reg(sensor->slv_addr, EXP_COMPENSATE_REG, 0x05); //+3
-        break;  
-    case exposure_6:
-        ret = write_reg(sensor->slv_addr, EXP_COMPENSATE_REG, 0x06); //-3
-        break;  
-    default:
-        ESP_LOGW(TAG, "exposure fail");
-        ret = -1;
-        break;
-    }
+    int reg_val = 0x00; // Default to 0 EV
+
+    // Intercept ESPHome's -2 to 2 scale and translate to PY260 registers
+    if (enable == 1) reg_val = 0x01;       // +1 EV
+    else if (enable == -1) reg_val = 0x02; // -1 EV
+    else if (enable == 2) reg_val = 0x03;  // +2 EV
+    else if (enable == -2) reg_val = 0x04; // -2 EV
+    
+    ret = write_reg(sensor->slv_addr, EXP_COMPENSATE_REG, reg_val);
+    
     if (ret == 0) {
-        ESP_LOGD(TAG, "Set exposure to: %d", enable);
+        ESP_LOGD(TAG, "Translated ESPHome ae_level %d to register 0x%02x", enable, reg_val);
     }
     return ret;
 }
@@ -427,21 +406,23 @@ static int set_special_effect (sensor_t *sensor, int effect)
 static int set_quality (sensor_t *sensor, int quality)
 {
     int ret = 0;
-   if (quality > quality_max) {
-        ESP_LOGW(TAG, "Invalid quality  : %u", quality);
-        quality = quality_max;
+    int reg_val = 0x01; // Default quality
+    
+    // Intercept ESPHome's 10-63 scale
+    // Lower numbers mean better quality in standard ESPHome configs
+    if (quality <= 15) {
+        reg_val = 0x00; // quality_high
+    } else if (quality <= 30) {
+        reg_val = 0x01; // quality_default
+    } else {
+        reg_val = 0x02; // quality_low
     }
-     switch (quality) {
-     case quality_high:
-        ret = write_reg(sensor->slv_addr, IMAGE_QUALITY_REG, 0x00); 
-        break;
-        case quality_default:
-             ret = write_reg(sensor->slv_addr, IMAGE_QUALITY_REG, 0x01); 
-        break;
-        case quality_low:
-             ret = write_reg(sensor->slv_addr, IMAGE_QUALITY_REG, 0x02); 
-        break;
-     }
+
+    ret = write_reg(sensor->slv_addr, IMAGE_QUALITY_REG, reg_val); 
+    
+    if (ret == 0) {
+        ESP_LOGD(TAG, "Translated ESPHome quality %d to register 0x%02x", quality, reg_val);
+    }
     return ret;
 }
 
