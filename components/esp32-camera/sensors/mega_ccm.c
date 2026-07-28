@@ -326,7 +326,9 @@ static int set_exposure_ctrl(sensor_t *sensor, int enable)
     
     ret = write_reg(sensor->slv_addr, EXP_COMPENSATE_REG, reg_val);
     
+    // Sync the state
     if (ret == 0) {
+        sensor->status.ae_level = enable;
         ESP_LOGD(TAG, "Translated ESPHome ae_level %d to register 0x%02x", enable, reg_val);
     }
     return ret;
@@ -359,7 +361,10 @@ static int set_wb_mode (sensor_t *sensor, int mode)
         ret = -1;
         break;
     }
+    
+    // Sync the state
     if (ret == 0) {
+        sensor->status.wb_mode = mode;
         ESP_LOGD(TAG, "Set AWB_mode to: %d", mode);
     }
     return ret;
@@ -420,7 +425,9 @@ static int set_quality (sensor_t *sensor, int quality)
 
     ret = write_reg(sensor->slv_addr, IMAGE_QUALITY_REG, reg_val); 
     
+    // Update the struct with ESPHome's raw number so it reports correctly
     if (ret == 0) {
+        sensor->status.quality = quality;
         ESP_LOGD(TAG, "Translated ESPHome quality %d to register 0x%02x", quality, reg_val);
     }
     return ret;
@@ -442,6 +449,7 @@ static int set_mirror (sensor_t *sensor, int mirror)
              ret = write_reg(sensor->slv_addr, IMAGE_MIRROR_REG, 0x00); 
         break;
      }
+    if (ret == 0) sensor->status.hmirror = mirror; // Update struct
     return ret;
 }
 static int set_flip (sensor_t *sensor, int flip)
@@ -459,6 +467,7 @@ static int set_flip (sensor_t *sensor, int flip)
              ret = write_reg(sensor->slv_addr, IMAGE_FLIP_REG, 0x00); 
         break;
      }
+    if (ret == 0) sensor->status.vflip = flip; // Update struct
     return ret;
 }
 
@@ -568,13 +577,12 @@ static int init_status(sensor_t *sensor)
 
 static int set_dummy(sensor_t *sensor, int val)
 {
-    ESP_LOGW(TAG, "Unsupported");
-    return -1;
+    // ESP_LOGW(TAG, "Unsupported"); 
+    return 0; // Changed from -1 to fake a success
 }
 static int set_gainceiling_dummy(sensor_t *sensor, gainceiling_t val)
 {
-    ESP_LOGW(TAG, "Unsupported");
-    return -1;
+    return 0; // Changed from -1 to fake a success
 }
 
 int mega_ccm_detect(int slv_addr, sensor_id_t *id)
@@ -602,27 +610,41 @@ int mega_ccm_init(sensor_t *sensor)
     sensor->set_brightness = set_brightness;
     sensor->set_contrast = set_contrast;
     sensor->set_saturation = set_saturation;
-    sensor->set_exposure_ctrl = set_exposure_ctrl;
+    
+    // ESPHome uses this for ON/OFF. Sent to dummy since PY260 doesn't toggle AEC this way.
+    sensor->set_exposure_ctrl = set_dummy; 
+    
     sensor->set_wb_mode = set_wb_mode;
     sensor->set_special_effect = set_special_effect;
     sensor->set_quality = set_quality;
+    
+    // The author's custom AGC toggle function
     sensor->set_AGC_mode = set_AGC_mode;
+    
     sensor->set_agc_gain = set_agc_gain;     
     sensor->set_mamual_exp_h = set_mamual_exp_h;
     sensor->set_mamual_exp_l= set_mamual_exp_l;
-    sensor->set_gainceiling = set_gainceiling_dummy;
+    
+    // Map ESPHome's Gain Ceiling to the hardware's Manual AGC function
+    sensor->set_gainceiling = set_agc_gain; 
 
     sensor->set_sharpness = set_dummy;
     sensor->set_denoise = set_dummy;
     sensor->set_colorbar = set_dummy;
     sensor->set_whitebal = set_dummy;
-    sensor->set_gain_ctrl = set_dummy;
+    
+    // Wire ESPHome's Gain Control ON/OFF command to the author's AGC function
+    sensor->set_gain_ctrl = set_AGC_mode; 
+    
     sensor->set_hmirror = set_mirror;
     sensor->set_vflip = set_flip;
     sensor->set_aec2 = set_dummy;
     sensor->set_awb_gain = set_dummy;
     sensor->set_aec_value = set_dummy;
-    sensor->set_ae_level = set_dummy;
+    
+    // Wire ESPHome's -2 to 2 Exposure Level to your custom C++ translation function
+    sensor->set_ae_level = set_exposure_ctrl; 
+    
     sensor->set_dcw = set_dummy;
     sensor->set_bpc = set_dummy;
     sensor->set_wpc = set_dummy;
